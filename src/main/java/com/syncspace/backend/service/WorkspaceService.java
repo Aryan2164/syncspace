@@ -2,6 +2,7 @@ package com.syncspace.backend.service;
 
 
 import com.syncspace.backend.DTO.AddMemberRequest;
+import com.syncspace.backend.DTO.WorkspaceMemberResponse;
 import com.syncspace.backend.entity.Workspace;
 import com.syncspace.backend.entity.WorkspaceMember;
 import com.syncspace.backend.enums.WorkspaceRole;
@@ -14,6 +15,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.syncspace.backend.entity.User;
 
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -119,4 +122,80 @@ public class WorkspaceService {
 
         return "Member added successfully";
     }
+
+    public List<WorkspaceMemberResponse> getWorkspaceMembers(Long workspaceId,
+                                                             Authentication authentication){
+
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email);
+
+        System.out.println("Logged user id: " + user.getId());
+        System.out.println("Workspace id: " + workspaceId);
+
+
+        WorkspaceMember existingMember =
+                workspaceMemberRepository.findMember(
+                        workspaceId,
+                        user.getId()
+                );
+
+        boolean isMember = existingMember != null;
+
+        System.out.println("Is member: " + isMember);
+
+        if(!isMember){
+            throw new RuntimeException("Access denied");
+        }
+
+        List<WorkspaceMember> members =
+                workspaceMemberRepository.findByWorkspaceId(workspaceId);
+
+        System.out.println("Members size: " + members.size());
+
+        List<WorkspaceMemberResponse> responses = new ArrayList<>();
+
+        for (WorkspaceMember member : members){
+
+            System.out.println(member.getUser().getEmail());
+
+            WorkspaceMemberResponse response =
+                    new WorkspaceMemberResponse();
+
+            response.setUserId(member.getUser().getId());
+
+            response.setName(member.getUser().getName());
+
+            response.setEmail(member.getUser().getEmail());
+
+            response.setRole(member.getRole());
+
+            responses.add(response);
+        }
+
+        return responses;
+    }
+
+    public String removeMember(Long workspaceId,
+                               Long userId,
+                               Authentication authentication){
+    String email = authentication.getName();
+    User user = userRepository.findByEmail(email);
+    Workspace workspace =  workspaceRepository.findById(workspaceId)
+            .orElseThrow(()-> new RuntimeException("member not deleted"));
+    if(!workspace.getOwner().getId().equals(user.getId())){
+        throw new RuntimeException("Access denied");
+    }
+        WorkspaceMember workspaceMember =
+                workspaceMemberRepository.findMember(
+                        workspaceId,
+                        userId
+                );
+        if(workspaceMember == null){
+            throw new RuntimeException("Member not found");
+        }
+        workspaceMemberRepository.delete(workspaceMember);
+        return "member removed successfully";
+    }
+
 }

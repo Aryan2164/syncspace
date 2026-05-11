@@ -2,9 +2,11 @@ package com.syncspace.backend.controller;
 
 
 import com.syncspace.backend.DTO.AddMemberRequest;
+import com.syncspace.backend.DTO.WorkspaceMemberResponse;
 import com.syncspace.backend.DTO.WorkspaceRequest;
 import com.syncspace.backend.entity.Workspace;
 import com.syncspace.backend.service.WorkspaceService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -60,6 +62,25 @@ public class WorkspaceController {
                          @RequestBody AddMemberRequest request,
                          Authentication authentication
                          ){
-return workspaceService.addMember(id, request, authentication);
+      return workspaceService.addMember(id, request, authentication);
+    }
+
+    @GetMapping("/{id}/members")
+    public ResponseEntity<List<WorkspaceMemberResponse>> getWorkspaceMembers(@PathVariable Long id,
+                                                                             Authentication authentication
+                                                                             ){
+        return ResponseEntity.ok(workspaceService.getWorkspaceMembers(id, authentication));
+    }
+
+    @DeleteMapping("/{workspaceId}/members/{userId}")
+    public String removeMember(@PathVariable Long workspaceId,
+                               @PathVariable Long userId,
+                               Authentication authentication
+                               ){
+            return workspaceService.removeMember(
+                    workspaceId,
+                    userId,
+                    authentication
+            );
     }
 }
